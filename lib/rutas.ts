@@ -199,6 +199,20 @@ export async function enrutar(req: IncomingMessage, res: ServerResponse): Promis
     return responder(res, 200, { ok: true });
   }
 
+  // ---- Cambiar mi contraseña (pide la actual; cierra mis otras sesiones) ----
+  if (ruta === '/me/clave' && metodo === 'PUT') {
+    const d = await cuerpoJson(req, 10_000);
+    const actual = String(d.actual ?? '');
+    const nueva = String(d.nueva ?? '');
+    if (nueva.length < 6 || nueva.length > 200) fallar(422, 'La contraseña nueva debe tener al menos 6 caracteres.');
+    const guardada = (await q('SELECT clave_hash FROM usuarios WHERE id = ?', [usuario.id]))[0]?.clave_hash ?? null;
+    if (!(await verificarClave(actual, guardada))) fallar(403, 'La contraseña actual no es correcta.');
+    await ejecutar('UPDATE usuarios SET clave_hash = ? WHERE id = ?', [await hashClave(nueva), usuario.id]);
+    const mio = sha256(String(req.headers.authorization).slice(7).toLowerCase());
+    await ejecutar('DELETE FROM sesiones WHERE usuario_id = ? AND token_hash <> ?', [usuario.id, mio]);
+    return responder(res, 200, { ok: true });
+  }
+
   // ---- Informes SST: listar ----
   if (ruta === '/informes' && metodo === 'GET') {
     exigirRol(usuario, ['sst', 'administracion']);
