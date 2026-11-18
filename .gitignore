@@ -1,0 +1,27 @@
+# Lo que no se menciona aquí queda FUERA del repositorio público: el servidor (servidor/), los respaldos,
+# los APK ya compilados, las capturas, etc.
+/*
+!/.gitignore
+!/README.md
+!/.github/
+!/alianza-app/
+
+# ---- App ----
+/alianza-app/node_modules/
+/alianza-app/android/
+/alianza-app/ios/
+/alianza-app/.expo/
+/alianza-app/dist/
+/alianza-app/web-build/
+*.apk
+*.aab
+*.jks
+*.keystore
+.env
+.env.*
+
+# ---- Servidor: no se publica; vive solo en el PC de la oficina ----
+/servidor/
+
+# Repositorio interno que creó la plantilla de Expo (apartado, no se usa)
+/alianza-app/.git-plantilla-expo/
