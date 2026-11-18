@@ -1,0 +1,20 @@
+{
+  "name": "alianza-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de Alianza para Vercel (funciones Node) con base de datos MySQL/TiDB",
+  "engines": { "node": "22.x" },
+  "scripts": {
+    "dev": "tsx tests/servidor-local.ts",
+    "tipos": "tsc --noEmit",
+    "prueba": "tsx tests/api.test.ts"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

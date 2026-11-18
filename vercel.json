@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install",
+  "buildCommand": "cd alianza-app && npm ci && EXPO_BASE_URL= EXPO_PUBLIC_API_PATH=/api npx expo export --platform web --output-dir ../public",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -47,6 +47,7 @@ export default function LoginScreen() {
           login({ personId: demo.personId, role: demo.role }, 'demo');
         } else {
           showAlert('No hay conexión con el servidor', e.message);
+          setEditandoServidor(true);
         }
       } else {
         showAlert('No pudimos iniciar sesión', 'Ocurrió un error inesperado. Inténtalo de nuevo.');
@@ -89,14 +90,14 @@ export default function LoginScreen() {
           <View style={{ marginTop: 8 }}>
             <Input
               label="Dirección del servidor"
-              placeholder="192.168.1.10"
+              placeholder="alianza.vercel.app"
               autoCapitalize="none"
               keyboardType="url"
               value={servidor}
               onChangeText={setServidorTexto}
             />
             <Text style={[styles.muted, { fontSize: 11, marginTop: -8 }]}>
-              Es la dirección IP del computador con XAMPP. En el emulador de Android usa 10.0.2.2.
+              Normalmente ya viene escrita. Si cambió, pide la nueva a quien administra el servidor. (Emulador de Android: 10.0.2.2.)
             </Text>
           </View>
         )}

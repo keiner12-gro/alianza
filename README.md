@@ -29,6 +29,12 @@ Configuración del repositorio (Settings → Secrets and variables → Actions):
 | `SERVIDOR_URL` | Variable | Dirección del servidor que la app usará por defecto, p. ej. `http://192.168.1.10/alianza-api` |
 | `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` | Secretos (opcional) | Llave con la que se firma el APK |
 
+## Servidor (API + versión web)
+
+La API (Node) vive en [`api/`](api) y [`lib/`](lib) y se publica en **Vercel**, con la base de datos en **TiDB Cloud**
+(compatible con MySQL). La versión web de la app se publica en el mismo dominio. Paso a paso en
+[DESPLIEGUE.md](DESPLIEGUE.md). Las pruebas automáticas de la API están en [`tests/`](tests).
+
 ## Desarrollo
 
 ```bash

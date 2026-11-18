@@ -30,15 +30,23 @@ export class ErrorApi extends Error {
 // La persona puede cambiarla desde el inicio de sesión.
 const URL_POR_DEFECTO =
   Platform.OS === 'web' && typeof window !== 'undefined'
-    ? `${window.location.origin}/alianza-api`
+    ? `${window.location.origin}${process.env.EXPO_PUBLIC_API_PATH || '/alianza-api'}`
     : process.env.EXPO_PUBLIC_SERVIDOR_URL || 'http://192.168.0.10/alianza-api';
 const archivoUrl = () => new File(Paths.document, 'servidor-url.txt');
 
+/** ¿La dirección es de la red local (un PC con XAMPP) y no de Internet? */
+const esRedLocal = (texto: string) => /^(https?:\/\/)?(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|[^/:]+\.local)/i.test(texto);
+
+/**
+ * Acepta la dirección como la escriba la persona: "192.168.1.10" (PC con XAMPP) o "alianza.vercel.app" (Internet)
+ * y completa el protocolo y la ruta de la API. Si ya trae ruta, la respeta.
+ */
 export function normalizarUrl(texto: string) {
   let u = texto.trim().replace(/\/+$/, '');
   if (!u) return URL_POR_DEFECTO;
-  if (!/^https?:\/\//i.test(u)) u = 'http://' + u;
-  if (!/\/alianza-api$/i.test(u)) u += '/alianza-api';
+  const local = esRedLocal(u);
+  if (!/^https?:\/\//i.test(u)) u = (local ? 'http://' : 'https://') + u;
+  if (!/^https?:\/\/[^/]+\/.+/i.test(u)) u += local ? '/alianza-api' : '/api';
   return u;
 }
 
