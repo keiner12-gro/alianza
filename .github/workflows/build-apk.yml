@@ -1,0 +1,100 @@
+name: Compilar APK
+
+# Compila la app Android (Expo / React Native) en un servidor de GitHub y publica el APK en Releases.
+# Así no depende del computador de nadie (rutas largas de Windows, Java, SDK de Android...).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'alianza-app/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch: # también se puede lanzar a mano desde la pestaña Actions
+
+permissions:
+  contents: write # necesario para crear el Release
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: alianza-app
+    env:
+      # Dirección del servidor que usará la app por defecto. Se define en Settings > Variables > SERVIDOR_URL
+      # (no es un secreto). Si no existe, la app usa la dirección que trae por defecto.
+      EXPO_PUBLIC_SERVIDOR_URL: ${{ vars.SERVIDOR_URL }}
+      # Firma del APK (opcional pero recomendada: sin ella, cada instalación nueva no podría actualizar a la anterior)
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: alianza-app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar tipos (TypeScript)
+        run: npx tsc --noEmit
+
+      - name: Generar el proyecto Android
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Número de versión = número de compilación
+        run: |
+          sed -i "s/versionCode [0-9][0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Compilar el APK (solo teléfonos reales)
+        working-directory: alianza-app/android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
+
+      - name: Firmar con la llave de la empresa
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/alianza.jks"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" sign --ks "$RUNNER_TEMP/alianza.jks" --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
+            --out android/app/build/outputs/apk/release/Alianza.apk \
+            android/app/build/outputs/apk/release/app-release.apk
+          "$APKSIGNER" verify --print-certs android/app/build/outputs/apk/release/Alianza.apk | head -3
+          rm -f "$RUNNER_TEMP/alianza.jks"
+
+      - name: Usar el APK sin firma propia (solo pruebas)
+        if: ${{ env.KEYSTORE_BASE64 == '' }}
+        run: cp android/app/build/outputs/apk/release/app-release.apk android/app/build/outputs/apk/release/Alianza.apk
+
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Alianza · compilación ${{ github.run_number }}
+          make_latest: true
+          files: alianza-app/android/app/build/outputs/apk/release/Alianza.apk
+          body: |
+            App Android de Alianza, compilación ${{ github.run_number }} (versión 1.0.${{ github.run_number }}).
+
+            **Instalar:** abre este enlace en el celular, descarga `Alianza.apk` y ábrelo. Android pedirá permiso para
+            "instalar apps de origen desconocido" para tu navegador: es normal, porque la app no viene de Play Store.
+
+            Enlace que siempre apunta a la última versión:
+            `https://github.com/${{ github.repository }}/releases/latest/download/Alianza.apk`
