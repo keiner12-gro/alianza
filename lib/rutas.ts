@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { conexionSinBase, db, ejecutar, q, transaccion } from './db';
+import { conexionSinBase, db, ejecutar, nombreBaseDeDatos, q, transaccion } from './db';
 import { ESQUEMA } from './esquema';
 import {
   ErrorHttp, claveAleatoria, cuerpoJson, enlaceFoto, fallar, firmaFotoValida, hashClave, igualesSeguro,
@@ -100,7 +100,7 @@ async function instalar(req: IncomingMessage) {
   if (esperado.length < 24 || !igualesSeguro(dado, esperado)) fallar(404, 'Ruta no encontrada.');
 
   const cuerpo = req.headers['content-length'] && req.headers['content-length'] !== '0' ? await cuerpoJson(req) : {};
-  const nombreBase = (process.env.DB_NAME ?? 'alianza').replace(/[^A-Za-z0-9_]/g, '');
+  const nombreBase = nombreBaseDeDatos();
   const cn = await conexionSinBase();
   try {
     await cn.query(`CREATE DATABASE IF NOT EXISTS \`${nombreBase}\` CHARACTER SET utf8mb4`);

@@ -3,14 +3,19 @@ import mysql from 'mysql2/promise';
 /**
  * Conexión a la base de datos (MySQL, MariaDB o TiDB Cloud). Los datos vienen de variables de entorno:
  *   DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME (por defecto "alianza"), DB_SSL=1 (obligatorio en TiDB Cloud)
+ * La integración de TiDB Cloud con Vercel crea TIDB_HOST, TIDB_PORT, TIDB_USER, TIDB_PASSWORD y TIDB_DATABASE:
+ * también se aceptan (y en ese caso la conexión cifrada se activa sola).
  */
+const entorno = (a: string, b: string) => process.env[a] || process.env[b];
+export const nombreBaseDeDatos = () => (entorno('DB_NAME', 'TIDB_DATABASE') ?? 'alianza').replace(/[^A-Za-z0-9_]/g, '');
+
 const opciones = (conBase: boolean): mysql.PoolOptions => ({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT ?? 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ...(conBase ? { database: process.env.DB_NAME ?? 'alianza' } : {}),
-  ssl: process.env.DB_SSL === '1' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
+  host: entorno('DB_HOST', 'TIDB_HOST'),
+  port: Number(entorno('DB_PORT', 'TIDB_PORT') ?? 3306),
+  user: entorno('DB_USER', 'TIDB_USER'),
+  password: entorno('DB_PASSWORD', 'TIDB_PASSWORD'),
+  ...(conBase ? { database: nombreBaseDeDatos() } : {}),
+  ssl: process.env.DB_SSL === '1' || (process.env.TIDB_HOST && process.env.DB_SSL !== '0') ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
   charset: 'utf8mb4',
   // Fechas como texto "AAAA-MM-DD HH:MM:SS" en UTC: así no dependen de la zona horaria del servidor
   dateStrings: true,

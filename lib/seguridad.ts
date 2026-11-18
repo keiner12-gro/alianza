@@ -94,8 +94,11 @@ export function igualesSeguro(a: string, b: string): boolean {
 
 const secreto = () => {
   const s = process.env.SECRETO;
-  if (!s || s.length < 32) throw new Error('Falta la variable SECRETO (mínimo 32 caracteres).');
-  return s;
+  if (s && s.length >= 32) return s;
+  // Sin SECRETO propio se deriva de la contraseña de la base de datos, que solo existe en el servidor
+  const clave = process.env.DB_PASSWORD || process.env.TIDB_PASSWORD;
+  if (!clave) throw new Error('Falta la variable SECRETO (mínimo 32 caracteres).');
+  return createHash('sha256').update(`alianza-fotos-v1|${clave}`).digest('hex');
 };
 
 const firma = (id: number, exp: number) => createHmac('sha256', secreto()).update(`foto|${id}|${exp}`).digest('hex');
